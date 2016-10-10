@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-#Rin 5780417
 import sys
 import socket
 from urlparse import urlparse
 
-def downloaddata(filename, website, header_getter):
+#def downloaddata(filename, website, header_getter): if there is HEADER and GETTER
+def downloaddata(filename, website):
 	NL = '\r\n'
 	#Parse, and find variables
 	url = urlparse(website)
@@ -20,12 +20,12 @@ def downloaddata(filename, website, header_getter):
 
 	#if you want GET, make header_getter true else make it false.
 
-	if header_getter:
-		variab = "GET "
-	else:
-		variab = "HEAD "
+	# if header_getter:
+	# 	variab = "GET "
+	# else:
+	# 	variab = "HEAD "
 
-	http_request = variab + path + " HTTP/1.1" + NL + "Host: " + host + NL + NL
+	http_request = "GET " + path + " HTTP/1.1" + NL + "Host: " + host + NL + NL
 
 	#open socket
 	#location = '/Users/Rin/Downloads/'
@@ -50,13 +50,15 @@ def downloaddata(filename, website, header_getter):
 
 	filedata = file.split('\r\n')
 	content_len = filedata[6]
-	print content_len
 
 #if you want GET, make header_getter true else make it false.
 #first send header, get the contentlenght in the downloadbuffer then send getter
 #and recieve the file.
 website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
 
-downloaddata("heheh.jpg",website, False)
-downloaddata("heheh.jpg",website, True)
+#downloaddata("heheh.jpg",website, False) #ONLY IF WE HAVE HEADER AND GETTER
+downloaddata("heheh.jpg", website)
 #filename will be sys.argv[2]
+
+#close connection when you reach content length
+#close connection even if you dont know the content length
