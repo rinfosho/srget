@@ -4,6 +4,9 @@ import sys
 import socket
 from urlparse import urlparse
 
+#if you want GET, make header_getter true else make it false.
+#first send header, get the contentlenght in the downloadbuffer then send getter
+#and recieve the file.
 #def downloaddata(filename, website, header_getter): if there is HEADER and GETTER
 def downloaddata(filename, website):
 	NL = '\r\n'
@@ -51,14 +54,17 @@ def downloaddata(filename, website):
 	filedata = file.split('\r\n')
 	content_len = filedata[6]
 
-#if you want GET, make header_getter true else make it false.
-#first send header, get the contentlenght in the downloadbuffer then send getter
-#and recieve the file.
+
 website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
 
 #downloaddata("heheh.jpg",website, False) #ONLY IF WE HAVE HEADER AND GETTER
+
+filename = sys.argv[2]
+connectionnum = sys.argv[3]
+website = sys.argv[4]
+#sample call = downloaddata(filename, website)
+
 downloaddata("heheh.jpg", website)
-#filename will be sys.argv[2]
 
 #close connection when you reach content length
 #close connection even if you dont know the content length
