@@ -3,6 +3,7 @@
 import sys
 import socket
 from urlparse import urlparse
+import os
 
 #if you want GET, make header_getter true else make it false.
 #first send header, get the contentlenght in the downloadbuffer then send getter
@@ -12,7 +13,13 @@ def downloaddata(filename, website):
 	NL = '\r\n'
 	#Parse, and find variables
 	url = urlparse(website)
-	path = url.path
+	#find path
+	if url.path == "":
+		mypath = "/"
+	else:
+		mypath = url.path
+
+	#find port
 	if url.port == None:
 		port = 80
 	else:
@@ -31,8 +38,7 @@ def downloaddata(filename, website):
 	# else:
 	# 	variab = "HEAD "
 
-	http_request = "GET " + path + " HTTP/1.1" + NL + "Host: " + host + NL + NL
-
+	http_request = "GET " + mypath + " HTTP/1.1" + NL + "Host: " + host + NL + NL
 	#open socket
 	#location = '/Users/Rin/Downloads/'
 	dwnld_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -47,32 +53,145 @@ def downloaddata(filename, website):
 		if len(data) == 0:
 			break
 		downloadbuffer = downloadbuffer + data
+	print downloadbuffer
+
+	# #IF 301 is encountered, redirect it.
+	# if "301" in downloadbuffer:
+	# 	dwnld_socket.close()
+	# 	data = downloadbuffer.split(NL)
+	# 	newurl = urlparse(data[3])
+	# 	print newurl
+	# 	newhost = newurl.path #this is actually the host, seems to be an error if i change it the variable name
+	# 	newhost = newhost.strip(" ")
+	# 	print newhost
+	# 	secondhost = urlparse(newhost)
+	# 	scheme = url.scheme
+	# 	#find port
+	# 	if url.port == None:
+	# 		newport = 80
+
+
+	# 	print "hostnameredirect", secondhost.hostname
+	# 	print "pathredirect", newurl.hostname
+	# 	#change path if its empty
+	# 	if newurl.hostname == None:
+	# 		newhttp = "GET " + "/" + " HTTP/1.1" + NL + "Host: " + secondhost.hostname + NL + NL
+	# 	else:
+	# 		newhttp = "GET " + newurl.hostname + " HTTP/1.1 " + NL + "Host: " + secondhost.hostname + NL + NL
+
+
+	# 	#open new socket
+	# 	new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	# 	new_socket.connect((secondhost.hostname,newport))
+	# 	new_socket.send(newhttp)
+
+	# 	newdownloadbuffer = ""
+	# 	while True:
+	# 		newdata = new_socket.recv(32768)
+	# 		if len(newdata) == 0:
+	# 			break
+	# 		newdownloadbuffer = newdownloadbuffer + newdata
+
+	# 	#write to a location in memory
+	# 	a = []
+	# 	a = newdownloadbuffer.split(NL+NL)
+	# 	with open(filename,'wb') as myfile:
+	# 		myfile.write(a[1])
+
+	# 	#Check header data of the server	
+	# 	newlistoffiledata = a[0].split(NL)
+
+	# 	#Find content_len
+	# 	if "Content-Length" not in newlistoffiledata:
+	# 		print "No details given about content length (redirect)"
+
+	# 	new_socket.close()
 
 	#write to a location in memory
-	file, downloadeddata = downloadbuffer.split(NL + NL)
+	b = []
+	b = downloadbuffer.split(NL + NL)
 	with open(filename,'wb') as myfile:
-		myfile.write(downloadeddata)
-	dwnld_socket.close()
+		myfile.write(b[1])
 
-	filedata = file.split(NL)
-	if len(filedata) == 9:
-		content_len = filedata[6]
-	else:
+	#Check header data of the server	
+	listoffiledata = b[0].split(NL)
+
+	#Find content_len
+	if "Content-Length" not in listoffiledata:
 		print "No details given about content length"
 
+	dwnld_socket.close()
+
+	#Check to see if file is empt
+	statistic = os.stat(filename)
+	if statistic.st_size > 0:
+		sys.exit(1)
+
+	#IF 301 is encountered, redirect it.
+	if "301" in downloadbuffer:
+		data = downloadbuffer.split(NL)
+		newurl = urlparse(data[3])
+		print newurl
+		newhost = newurl.path #this is actually the host, seems to be an error if i change it the variable name
+		newhost = newhost.strip(" ")
+		print newhost
+		secondhost = urlparse(newhost)
+		scheme = url.scheme
+		#find port
+		if url.port == None:
+			newport = 80
+
+
+		print "hostnameredirect", secondhost.hostname
+		print "pathredirect", newurl.hostname
+		#change path if its empty
+		if newurl.hostname == None:
+			newhttp = "GET " + "/" + " HTTP/1.1" + NL + "Host: " + secondhost.hostname + NL + NL
+		else:
+			newhttp = "GET " + newurl.hostname + " HTTP/1.1 " + NL + "Host: " + secondhost.hostname + NL + NL
+
+
+		#open new socket
+		new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		new_socket.connect((secondhost.hostname,newport))
+		new_socket.send(newhttp)
+
+		newdownloadbuffer = ""
+		while True:
+			newdata = new_socket.recv(32768)
+			if len(newdata) == 0:
+				break
+			newdownloadbuffer = newdownloadbuffer + newdata
+
+		#write to a location in memory
+		a = []
+		a = newdownloadbuffer.split(NL+NL)
+		with open(filename,'wb') as myfile:
+			myfile.write(a[1])
+
+		#Check header data of the server	
+		newlistoffiledata = a[0].split(NL)
+
+		#Find content_len
+		if "Content-Length" not in newlistoffiledata:
+			print "No details given about content length (redirect)"
+
+		new_socket.close()
 
 #website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
 #website = "http://10.27.8.20:8080"
-website = "http://ipv4.download.thinkbroadband.com/100MB.zip"
+#website = "http://ipv4.download.thinkbroadband.com/100MB.zip"
+#website = "http://www.abc.com"
+website = "http://10.27.8.20:8080/primes11.txt"
 
 #downloaddata("heheh.jpg",website, False) #ONLY IF WE HAVE HEADER AND GETTER
 
 #filename = sys.argv[2]
 #connectionnum = sys.argv[3]
-#website = sys.argv[4]
+#website = sys.argv[-1]
 #sample call = downloaddata(filename, website)
 
-downloaddata("heheh.zip", website)
+downloaddata("primes11.txt", website)
 
 #close connection when you reach content length
 #close connection even if you dont know the content length
