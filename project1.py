@@ -55,58 +55,6 @@ def downloaddata(filename, website):
 		downloadbuffer = downloadbuffer + data
 	print downloadbuffer
 
-	# #IF 301 is encountered, redirect it.
-	# if "301" in downloadbuffer:
-	# 	dwnld_socket.close()
-	# 	data = downloadbuffer.split(NL)
-	# 	newurl = urlparse(data[3])
-	# 	print newurl
-	# 	newhost = newurl.path #this is actually the host, seems to be an error if i change it the variable name
-	# 	newhost = newhost.strip(" ")
-	# 	print newhost
-	# 	secondhost = urlparse(newhost)
-	# 	scheme = url.scheme
-	# 	#find port
-	# 	if url.port == None:
-	# 		newport = 80
-
-
-	# 	print "hostnameredirect", secondhost.hostname
-	# 	print "pathredirect", newurl.hostname
-	# 	#change path if its empty
-	# 	if newurl.hostname == None:
-	# 		newhttp = "GET " + "/" + " HTTP/1.1" + NL + "Host: " + secondhost.hostname + NL + NL
-	# 	else:
-	# 		newhttp = "GET " + newurl.hostname + " HTTP/1.1 " + NL + "Host: " + secondhost.hostname + NL + NL
-
-
-	# 	#open new socket
-	# 	new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	# 	new_socket.connect((secondhost.hostname,newport))
-	# 	new_socket.send(newhttp)
-
-	# 	newdownloadbuffer = ""
-	# 	while True:
-	# 		newdata = new_socket.recv(32768)
-	# 		if len(newdata) == 0:
-	# 			break
-	# 		newdownloadbuffer = newdownloadbuffer + newdata
-
-	# 	#write to a location in memory
-	# 	a = []
-	# 	a = newdownloadbuffer.split(NL+NL)
-	# 	with open(filename,'wb') as myfile:
-	# 		myfile.write(a[1])
-
-	# 	#Check header data of the server	
-	# 	newlistoffiledata = a[0].split(NL)
-
-	# 	#Find content_len
-	# 	if "Content-Length" not in newlistoffiledata:
-	# 		print "No details given about content length (redirect)"
-
-	# 	new_socket.close()
-
 	#write to a location in memory
 	b = []
 	b = downloadbuffer.split(NL + NL)
@@ -123,7 +71,8 @@ def downloaddata(filename, website):
 	dwnld_socket.close()
 
 	#IF 301 is encountered, redirect it.
-	if "301" or "302" in downloadbuffer:
+	#look for specific index in header ONLY.
+	if "HTTP/1.1 301 Moved Permanently" or "HTTP/1.1 302 Moved Temporarily" in b[0]:
 		data = downloadbuffer.split(NL)
 		newurl = urlparse(data[3])
 		print newurl
@@ -136,9 +85,6 @@ def downloaddata(filename, website):
 		if url.port == None:
 			newport = 80
 
-
-		print "hostnameredirect", secondhost.hostname
-		print "pathredirect", newurl.hostname
 		#change path if its empty
 		if newurl.hostname == None:
 			newhttp = "GET " + "/" + " HTTP/1.1" + NL + "Host: " + secondhost.hostname + NL + NL
@@ -172,12 +118,14 @@ def downloaddata(filename, website):
 			print "No details given about content length (redirect)"
 
 		new_socket.close()
+	else:
+		sys.exit(1)
 
 #website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
 #website = "http://10.27.8.20:8080"
 #website = "http://ipv4.download.thinkbroadband.com/100MB.zip"
-website = "http://www.abc.com"
-#website = "http://10.27.8.20:8080/primes11.txt"
+#website = "http://www.abc.com"
+website = "http://10.27.8.20:8080/hugefile.qqq"
 
 #downloaddata("heheh.jpg",website, False) #ONLY IF WE HAVE HEADER AND GETTER
 
@@ -186,7 +134,7 @@ website = "http://www.abc.com"
 #website = sys.argv[-1]
 #sample call = downloaddata(filename, website)
 
-downloaddata("abc.txt", website)
+downloaddata("hugefile.qqq", website)
 
 #close connection when you reach content length
 #close connection even if you dont know the content length
