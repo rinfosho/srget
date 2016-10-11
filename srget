@@ -80,6 +80,9 @@ def downloaddata(filename, website):
 	if content_len == stat.st_size:
 		sys.exit(1)
 
+	if httpheader[1] == '404':
+		sys.exit(1)
+
 	#------------------------------------------------------------------------------------------------------------------#
 	#IF 301 is encountered, redirect it.
 	#look for specific index in header ONLY.
