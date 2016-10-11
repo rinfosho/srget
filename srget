@@ -80,62 +80,65 @@ def downloaddata(filename, website):
 	if content_len == stat.st_size:
 		sys.exit(1)
 
+	if httpheader[1] != 200:
+		sys.exit(1)
+
 	#------------------------------------------------------------------------------------------------------------------#
 	#IF 301 is encountered, redirect it.
 	#look for specific index in header ONLY.
-	if httpheader[1] == '301' or httpheader[1] == '302':
-		data = downloadbuffer.split(NL)
-		newurl = urlparse(data[3])
-		newhost = newurl.path #this is actually the host, seems to be an error if i change it the variable name
-		newhost = newhost.strip(" ")
-		secondhost = urlparse(newhost)
-		scheme = url.scheme
-		#find port
-		if url.port == None:
-			newport = 80
+	# if httpheader[1] == '301' or httpheader[1] == '302':
+	# 	data = downloadbuffer.split(NL)
+	# 	newurl = urlparse(data[3])
+	# 	newhost = newurl.path #this is actually the host, seems to be an error if i change it the variable name
+	# 	newhost = newhost.strip(" ")
+	# 	secondhost = urlparse(newhost)
+	# 	scheme = url.scheme
+	# 	#find port
+	# 	if url.port == None:
+	# 		newport = 80
 
-		#change path if its empty
-		if newurl.hostname == None:
-			newhttp = "GET " + "/" + " HTTP/1.1" + NL + "Host: " + secondhost.hostname + NL + NL
-		else:
-			newhttp = "GET " + newurl.hostname + " HTTP/1.1 " + NL + "Host: " + secondhost.hostname + NL + NL
-
-
-		#open new socket
-		new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		new_socket.connect((secondhost.hostname,newport))
-		new_socket.send(newhttp)
-
-		newdownloadbuffer = ""
-		while True:
-			newdata = new_socket.recv(32768)
-			if len(newdata) == 0:
-				break
-			newdownloadbuffer = newdownloadbuffer + newdata
-
-		header = downloadbuffer.split(NL)
-		for i in header:
-			spl = i.split(" ")
-			if spl[0] == "Content-Length:":
-				content_len = spl[1]
-
-		#write to a location in memory
-		a = []
-		a = newdownloadbuffer.split(NL+NL)
-		with open(location + filename,'wb') as myfile:
-			myfile.write(a[1])
+	# 	#change path if its empty
+	# 	if newurl.hostname == None:
+	# 		newhttp = "GET " + "/" + " HTTP/1.1" + NL + "Host: " + secondhost.hostname + NL + NL
+	# 	else:
+	# 		newhttp = "GET " + newurl.hostname + " HTTP/1.1 " + NL + "Host: " + secondhost.hostname + NL + NL
 
 
+	# 	#open new socket
+	# 	new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	# 	new_socket.connect((secondhost.hostname,newport))
+	# 	new_socket.send(newhttp)
 
-		#Check header data of the server	
-		newlistoffiledata = a[0].split(NL)
+	# 	newdownloadbuffer = ""
+	# 	while True:
+	# 		newdata = new_socket.recv(32768)
+	# 		if len(newdata) == 0:
+	# 			break
+	# 		newdownloadbuffer = newdownloadbuffer + newdata
 
-		new_socket.close()
+	# 	header = downloadbuffer.split(NL)
+	# 	for i in header:
+	# 		spl = i.split(" ")
+	# 		if spl[0] == "Content-Length:":
+	# 			content_len = spl[1]
 
-		#size of file.
-		stat = os.stat(location+filename)
-		if content_len == stat.st_size:
-			sys.exit(1)
+	# 	#write to a location in memory
+	# 	a = []
+	# 	a = newdownloadbuffer.split(NL+NL)
+	# 	with open(location + filename,'wb') as myfile:
+	# 		myfile.write(a[1])
+
+
+
+	# 	#Check header data of the server	
+	# 	newlistoffiledata = a[0].split(NL)
+
+	# 	new_socket.close()
+
+	# 	#size of file.
+	# 	stat = os.stat(location+filename)
+	# 	if content_len == stat.st_size:
+	# 		sys.exit(1)
 
 #website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
 #website = "http://10.27.8.20:8080"
