@@ -24,6 +24,7 @@ def downloaddata(filename, website):
 		port = 80
 	else:
 		port = url.port
+	print "port is", port
 	host = url.hostname
 	scheme = url.scheme
 
@@ -48,12 +49,20 @@ def downloaddata(filename, website):
 
 	#start the download process
 	downloadbuffer = ""
+	content_len = 0
 	while True:
 		data = dwnld_socket.recv(32768)
 		if len(data) == 0:
 			break
 		downloadbuffer = downloadbuffer + data
-	print downloadbuffer
+
+	header = downloadbuffer.split(NL)
+	for i in header:
+		spl = i.split(" ")
+		if spl[0] == "Content-Length:":
+			content_len = spl[1]
+
+	httpheader = header[0].split(" ")
 
 	#write to a location in memory
 	b = []
@@ -64,21 +73,21 @@ def downloaddata(filename, website):
 	#Check header data of the server	
 	listoffiledata = b[0].split(NL)
 
-	#Find content_len
-	if "Content-Length" not in listoffiledata:
-		print "No details given about content length"
-
 	dwnld_socket.close()
 
+	#find size, if same as content len, exit code
+	stat = os.stat(filename)
+	if content_len == stat.st_size:
+		sys.exit(1)
+
+	#------------------------------------------------------------------------------------------------------------------#
 	#IF 301 is encountered, redirect it.
 	#look for specific index in header ONLY.
-	if "HTTP/1.1 301 Moved Permanently" or "HTTP/1.1 302 Moved Temporarily" in b[0]:
+	if httpheader[1] == '301' or httpheader[1] == '302':
 		data = downloadbuffer.split(NL)
 		newurl = urlparse(data[3])
-		print newurl
 		newhost = newurl.path #this is actually the host, seems to be an error if i change it the variable name
 		newhost = newhost.strip(" ")
-		print newhost
 		secondhost = urlparse(newhost)
 		scheme = url.scheme
 		#find port
@@ -104,22 +113,29 @@ def downloaddata(filename, website):
 				break
 			newdownloadbuffer = newdownloadbuffer + newdata
 
+		header = downloadbuffer.split(NL)
+		for i in header:
+			spl = i.split(" ")
+			if spl[0] == "Content-Length:":
+				content_len = spl[1]
+
 		#write to a location in memory
 		a = []
 		a = newdownloadbuffer.split(NL+NL)
 		with open(filename,'wb') as myfile:
 			myfile.write(a[1])
 
+
+
 		#Check header data of the server	
 		newlistoffiledata = a[0].split(NL)
 
-		#Find content_len
-		if "Content-Length" not in newlistoffiledata:
-			print "No details given about content length (redirect)"
-
 		new_socket.close()
-	else:
-		sys.exit(1)
+
+		#size of file.
+		stat = os.stat(filename)
+		if content_len == stat.st_size:
+			sys.exit(1)
 
 #website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
 #website = "http://10.27.8.20:8080"
