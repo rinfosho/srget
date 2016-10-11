@@ -24,7 +24,6 @@ def downloaddata(filename, website):
 		port = 80
 	else:
 		port = url.port
-	print "port is", port
 	host = url.hostname
 	scheme = url.scheme
 
@@ -141,16 +140,16 @@ def downloaddata(filename, website):
 #website = "http://10.27.8.20:8080"
 #website = "http://ipv4.download.thinkbroadband.com/100MB.zip"
 #website = "http://www.abc.com"
-website = "http://10.27.8.20:8080/hugefile.qqq"
+#website = "http://10.27.8.20:8080/primes11.txt"
 
 #downloaddata("heheh.jpg",website, False) #ONLY IF WE HAVE HEADER AND GETTER
 
-#filename = sys.argv[2]
+filename = sys.argv[2]
 #connectionnum = sys.argv[3]
-#website = sys.argv[-1]
-#sample call = downloaddata(filename, website)
+website = sys.argv[-1]
+downloaddata(filename, website)
 
-downloaddata("hugefile.qqq", website)
+#downloaddata("file.txt", website)
 
 #close connection when you reach content length
 #close connection even if you dont know the content length
