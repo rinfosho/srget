@@ -13,13 +13,16 @@ def downloaddata(filename, website):
 	#Parse, and find variables
 	url = urlparse(website)
 	path = url.path
-	#port = url.port
-	port = 80
+	if url.port == None:
+		port = 80
+	else:
+		port = url.port
 	host = url.hostname
 	scheme = url.scheme
 
-	#if scheme == "https":
-	#	sys.exit
+	if scheme == "https":
+		print "HTTPS is not supported."
+		sys.exit(1)
 
 	#if you want GET, make header_getter true else make it false.
 
@@ -40,31 +43,36 @@ def downloaddata(filename, website):
 	#start the download process
 	downloadbuffer = ""
 	while True:
-		data = dwnld_socket.recv(2048)
+		data = dwnld_socket.recv(32768)
 		if len(data) == 0:
 			break
 		downloadbuffer = downloadbuffer + data
 
 	#write to a location in memory
-	file, downloadeddata = downloadbuffer.split('\r\n\r\n')
+	file, downloadeddata = downloadbuffer.split(NL + NL)
 	with open(filename,'wb') as myfile:
 		myfile.write(downloadeddata)
 	dwnld_socket.close()
 
-	filedata = file.split('\r\n')
-	content_len = filedata[6]
+	filedata = file.split(NL)
+	if len(filedata) == 9:
+		content_len = filedata[6]
+	else:
+		print "No details given about content length"
 
 
-website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
+#website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
+#website = "http://10.27.8.20:8080"
+website = "http://ipv4.download.thinkbroadband.com/100MB.zip"
 
 #downloaddata("heheh.jpg",website, False) #ONLY IF WE HAVE HEADER AND GETTER
 
-filename = sys.argv[2]
-connectionnum = sys.argv[3]
-website = sys.argv[4]
+#filename = sys.argv[2]
+#connectionnum = sys.argv[3]
+#website = sys.argv[4]
 #sample call = downloaddata(filename, website)
 
-downloaddata("heheh.jpg", website)
+downloaddata("heheh.zip", website)
 
 #close connection when you reach content length
 #close connection even if you dont know the content length
