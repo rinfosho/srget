@@ -122,13 +122,8 @@ def downloaddata(filename, website):
 
 	dwnld_socket.close()
 
-	#Check to see if file is empt
-	statistic = os.stat(filename)
-	if statistic.st_size > 0:
-		sys.exit(1)
-
 	#IF 301 is encountered, redirect it.
-	if "301" in downloadbuffer:
+	if "301" or "302" in downloadbuffer:
 		data = downloadbuffer.split(NL)
 		newurl = urlparse(data[3])
 		print newurl
@@ -181,8 +176,8 @@ def downloaddata(filename, website):
 #website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
 #website = "http://10.27.8.20:8080"
 #website = "http://ipv4.download.thinkbroadband.com/100MB.zip"
-#website = "http://www.abc.com"
-website = "http://10.27.8.20:8080/primes11.txt"
+website = "http://www.abc.com"
+#website = "http://10.27.8.20:8080/primes11.txt"
 
 #downloaddata("heheh.jpg",website, False) #ONLY IF WE HAVE HEADER AND GETTER
 
@@ -191,7 +186,7 @@ website = "http://10.27.8.20:8080/primes11.txt"
 #website = sys.argv[-1]
 #sample call = downloaddata(filename, website)
 
-downloaddata("primes11.txt", website)
+downloaddata("abc.txt", website)
 
 #close connection when you reach content length
 #close connection even if you dont know the content length
