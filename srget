@@ -10,7 +10,6 @@ import os
 #and recieve the file.
 #def downloaddata(filename, website, header_getter): if there is HEADER and GETTER
 def downloaddata(filename, website):
-	print "Currently downloading", filename, "...."
 	NL = '\r\n'
 	#Parse, and find variables
 	url = urlparse(website)
@@ -30,7 +29,7 @@ def downloaddata(filename, website):
 
 	if scheme == "https":
 		print "HTTPS is not supported."
-		sys.exit(1)
+		sys.exit()
 
 	#if you want GET, make header_getter true else make it false.
 
@@ -38,11 +37,6 @@ def downloaddata(filename, website):
 	# 	variab = "GET "
 	# else:
 	# 	variab = "HEAD "
-
-	#Check if file exists, if exist then terminate program
-	if os.path.exists(filename):
-		print "The file already exists, downloader is going to exit now."
-		sys.exit(1)
 
 	http_request = "GET " + mypath + " HTTP/1.1" + NL + "Host: " + host + NL + NL
 	#open socket
@@ -61,32 +55,33 @@ def downloaddata(filename, website):
 			break
 		downloadbuffer = downloadbuffer + data
 
-	header = downloadbuffer.split(NL)
+	header = downloadbuffer.split(NL+NL)
 	for i in header:
 		spl = i.split(" ")
 		if spl[0] == "Content-Length:":
 			content_len = spl[1]
 
+	#Check if file exists, if exist then terminate program
+	if os.path.exists(filename):
+		#see if file size is the same as the content length
+		fileinfo = os.stat(filename)
+		if content_len == fileinfo.st_size:
+			sys.exit()
+		else:
+			b2 = []
+			b2 = downloadbuffer.split(NL + NL)
+			with open(filename, 'wb') as myfile:
+				myfile.write(b2[1])
+	else:
+		#write to a location in memory
+		b = []
+		b = downloadbuffer.split(NL + NL)
+		with open(filename,'wb') as myfile:
+			myfile.write(b[1])
+
 	httpheader = header[0].split(" ")
 
-	#write to a location in memory
-	b = []
-	b = downloadbuffer.split(NL + NL)
-	with open(filename,'wb') as myfile:
-		myfile.write(b[1])
-	
-
-	#Check header data of the server	
-	listoffiledata = b[0].split(NL)
-
 	dwnld_socket.close()
-
-	#find size, if same as content len, exit code
-	stat = os.stat(filename)
-	if content_len == stat.st_size:
-		"Download has finished, program will exit itself"
-		sys.exit(1)
-
 	#------------------------------------------------------------------------------------------------------------------#
 	#IF 301 is encountered, redirect it.
 	#look for specific index in header ONLY.
@@ -110,7 +105,7 @@ def downloaddata(filename, website):
 		#Check if file exists, if exist then terminate program
 		if os.path.exists(filename):
 			print "The file already exists"
-			sys.exit(1)
+			sys.exit()
 
 		#open new socket
 		new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -130,24 +125,28 @@ def downloaddata(filename, website):
 			if spl[0] == "Content-Length:":
 				content_len = spl[1]
 
-		#write to a location in memory
-		a = []
-		a = newdownloadbuffer.split(NL+NL)
-		with open(filename,'wb') as myfile:
-			myfile.write(a[1])
-
-
+		#Check if file exists, if exist then terminate program
+		if os.path.exists(filename):
+			#see if file size is the same as the content length
+			fileinfo = os.stat(filename)
+			if content_len == fileinfo.st_size:
+				sys.exit()
+			else:
+				a2 = []
+				a2 = newdownloadbuffer.split(NL + NL)
+				with open(filename, 'wb') as myfile:
+					myfile.write(a2[1])
+		else:
+			#write to a location in memory
+			a = []
+			a = newdownloadbuffer.split(NL+NL)
+			with open(filename,'wb') as myfile:
+				myfile.write(a[1])
 
 		#Check header data of the server	
 		newlistoffiledata = a[0].split(NL)
 
 		new_socket.close()
-
-		#size of file.
-		stat = os.stat(filename)
-		if content_len == stat.st_size:
-			"Download has finished, program will exit itself"
-			sys.exit(1)
 
 #website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
 #website = "http://10.27.8.20:8080"
