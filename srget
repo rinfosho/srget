@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
+#Checkpoint 2
 import sys
 import socket
 from urlparse import urlparse
