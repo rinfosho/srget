@@ -31,7 +31,6 @@ def downloaddata(filename, website):
 		print "HTTPS is not supported."
 		sys.exit()
 
-	print "end of url parsing"
 
 	#if you want GET, make header_getter true else make it false.
 
@@ -47,7 +46,6 @@ def downloaddata(filename, website):
 	dwnld_socket.connect((host,port))
 	dwnld_socket.send(http_request)
 
-	print "end of socket opening and beginning of download buffer"
 
 	#start the download process
 	downloadbuffer = ""
@@ -59,30 +57,23 @@ def downloaddata(filename, website):
 			break
 		downloadbuffer = downloadbuffer + data
 
-	print "end of download buffer and beginning of finding content length"
-
 	header = downloadbuffer.split(NL+NL)
 	for i in header:
 		spl = i.split(" ")
-		print "headers", i
 		if spl[0] == "Content-Length:":
 			content_len = spl[1]
 		if spl[0] == "Last-Modified:":
 			lastmod = spl[1]
 
-
-	print "end of buffer, start of OS path if statements"
 	#Check if file exists, if exist then terminate program
 	if os.path.exists(filename):
 		#see if file size is the same as the content length
 		fileinfo = os.stat(filename)
-		print "does file exit?"
 		if content_len <= fileinfo.st_size:
 			#Loop through and see last modified
 			templastmod = ""
 			for i in header:
 				spl = i.split(" ")
-				print "headers", i
 				if spl[0] == "Last-Modified":
 					templastmod = spl[1]
 			#if temp last modified and last modified are the same, exit program
@@ -92,7 +83,6 @@ def downloaddata(filename, website):
 			else: 
 				#otherwise update the file
 				b2 = []
-				print "there is a file, but it is not complete"
 				b2 = downloadbuffer.split(NL + NL)
 				with open(filename, 'wb') as myfile:
 					myfile.write(b2[1])
@@ -102,7 +92,6 @@ def downloaddata(filename, website):
 		else:
 
 			b2 = []
-			print "there is a file, but it is not complete"
 			b2 = downloadbuffer.split(NL + NL)
 			with open(filename, 'wb') as myfile:
 				myfile.write(b2[1])
@@ -110,7 +99,6 @@ def downloaddata(filename, website):
 			sys.exit("Your file has been updated")
 	#If there is no file at all, thenn make a new file
 	else:
-		print "there is no file.. write new file"
 		#write to a location in memory
 		b = []
 		b = downloadbuffer.split(NL + NL)
@@ -120,12 +108,10 @@ def downloaddata(filename, website):
 		dwnld_socket.close()
 		sys.exit("Youre file has been downloaded")
 
-	print "end of writing, start of header"
 
 	httpheader = header[0].split(" ")
 
 	dwnld_socket.close()
-	print "socket closed."
 	#------------------------------------------------------------------------------------------------------------------#
 	#IF 301 is encountered, redirect it.
 	#look for specific index in header ONLY.
@@ -216,9 +202,9 @@ def downloaddata(filename, website):
 
 #downloaddata("heheh.jpg",website, False) #ONLY IF WE HAVE HEADER AND GETTER
 
- filename = sys.argv[2]
+filename = sys.argv[2]
 # #connectionnum = sys.argv[3]
- website = sys.argv[-1]
+website = sys.argv[-1]
 downloaddata(filename, website)
 
 #downloaddata("file.xyz", website)
