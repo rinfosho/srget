@@ -10,6 +10,7 @@ import os
 #and recieve the file.
 #def downloaddata(filename, website, header_getter): if there is HEADER and GETTER
 def downloaddata(filename, website):
+	print "Currently downloading", filename, "...."
 	NL = '\r\n'
 	#Parse, and find variables
 	url = urlparse(website)
@@ -37,6 +38,11 @@ def downloaddata(filename, website):
 	# 	variab = "GET "
 	# else:
 	# 	variab = "HEAD "
+
+	#Check if file exists, if exist then terminate program
+	if os.path.exists(filename):
+		print "The file already exists, downloader is going to exit now."
+		sys.exit(1)
 
 	http_request = "GET " + mypath + " HTTP/1.1" + NL + "Host: " + host + NL + NL
 	#open socket
@@ -68,6 +74,7 @@ def downloaddata(filename, website):
 	b = downloadbuffer.split(NL + NL)
 	with open(filename,'wb') as myfile:
 		myfile.write(b[1])
+	
 
 	#Check header data of the server	
 	listoffiledata = b[0].split(NL)
@@ -77,10 +84,7 @@ def downloaddata(filename, website):
 	#find size, if same as content len, exit code
 	stat = os.stat(filename)
 	if content_len == stat.st_size:
-		sys.exit(1)
-
-	if httpheader[1] != 200:
-		print "byebye"
+		"Download has finished, program will exit itself"
 		sys.exit(1)
 
 	#------------------------------------------------------------------------------------------------------------------#
@@ -103,6 +107,10 @@ def downloaddata(filename, website):
 		else:
 			newhttp = "GET " + newurl.hostname + " HTTP/1.1 " + NL + "Host: " + secondhost.hostname + NL + NL
 
+		#Check if file exists, if exist then terminate program
+		if os.path.exists(filename):
+			print "The file already exists"
+			sys.exit(1)
 
 		#open new socket
 		new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -128,6 +136,8 @@ def downloaddata(filename, website):
 		with open(filename,'wb') as myfile:
 			myfile.write(a[1])
 
+
+
 		#Check header data of the server	
 		newlistoffiledata = a[0].split(NL)
 
@@ -136,6 +146,7 @@ def downloaddata(filename, website):
 		#size of file.
 		stat = os.stat(filename)
 		if content_len == stat.st_size:
+			"Download has finished, program will exit itself"
 			sys.exit(1)
 
 #website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
@@ -147,7 +158,6 @@ def downloaddata(filename, website):
 #downloaddata("heheh.jpg",website, False) #ONLY IF WE HAVE HEADER AND GETTER
 
 filename = sys.argv[2]
-print filename
 # #connectionnum = sys.argv[3]
 website = sys.argv[-1]
 downloaddata(filename, website)
