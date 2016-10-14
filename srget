@@ -31,6 +31,8 @@ def downloaddata(filename, website):
 		print "HTTPS is not supported."
 		sys.exit()
 
+	print "end of url parsing"
+
 	#if you want GET, make header_getter true else make it false.
 
 	# if header_getter:
@@ -45,43 +47,85 @@ def downloaddata(filename, website):
 	dwnld_socket.connect((host,port))
 	dwnld_socket.send(http_request)
 
+	print "end of socket opening and beginning of download buffer"
 
 	#start the download process
 	downloadbuffer = ""
 	content_len = 0
+	lastmod = ""
 	while True:
 		data = dwnld_socket.recv(32768)
 		if len(data) == 0:
 			break
 		downloadbuffer = downloadbuffer + data
 
+	print "end of download buffer and beginning of finding content length"
+
 	header = downloadbuffer.split(NL+NL)
 	for i in header:
 		spl = i.split(" ")
+		print "headers", i
 		if spl[0] == "Content-Length:":
 			content_len = spl[1]
+		if spl[0] == "Last-Modified:":
+			lastmod = spl[1]
 
+
+	print "end of buffer, start of OS path if statements"
 	#Check if file exists, if exist then terminate program
 	if os.path.exists(filename):
 		#see if file size is the same as the content length
 		fileinfo = os.stat(filename)
-		if content_len == fileinfo.st_size:
-			sys.exit()
+		print "does file exit?"
+		if content_len <= fileinfo.st_size:
+			#Loop through and see last modified
+			templastmod = ""
+			for i in header:
+				spl = i.split(" ")
+				print "headers", i
+				if spl[0] == "Last-Modified":
+					templastmod = spl[1]
+			#if temp last modified and last modified are the same, exit program
+			if templastmod == lastmod:
+				dwnld_socket.close()
+				sys.exit("You already have the file, the downloader is going to quit now.")
+			else: 
+				#otherwise update the file
+				b2 = []
+				print "there is a file, but it is not complete"
+				b2 = downloadbuffer.split(NL + NL)
+				with open(filename, 'wb') as myfile:
+					myfile.write(b2[1])
+				dwnld_socket.close()
+				sys.exit("Your file has been updated")
+		#if the file does not have the same content length, then update file		
 		else:
+
 			b2 = []
+			print "there is a file, but it is not complete"
 			b2 = downloadbuffer.split(NL + NL)
 			with open(filename, 'wb') as myfile:
 				myfile.write(b2[1])
+			dwnld_socket.close()
+			sys.exit("Your file has been updated")
+	#If there is no file at all, thenn make a new file
 	else:
+		print "there is no file.. write new file"
 		#write to a location in memory
 		b = []
 		b = downloadbuffer.split(NL + NL)
 		with open(filename,'wb') as myfile:
 			myfile.write(b[1])
 
+		dwnld_socket.close()
+		sys.exit("Youre file has been downloaded")
+
+	print "end of writing, start of header"
+
 	httpheader = header[0].split(" ")
 
 	dwnld_socket.close()
+	print "socket closed."
 	#------------------------------------------------------------------------------------------------------------------#
 	#IF 301 is encountered, redirect it.
 	#look for specific index in header ONLY.
@@ -102,17 +146,13 @@ def downloaddata(filename, website):
 		else:
 			newhttp = "GET " + newurl.hostname + " HTTP/1.1 " + NL + "Host: " + secondhost.hostname + NL + NL
 
-		#Check if file exists, if exist then terminate program
-		if os.path.exists(filename):
-			print "The file already exists"
-			sys.exit()
-
 		#open new socket
 		new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		new_socket.connect((secondhost.hostname,newport))
 		new_socket.send(newhttp)
 
 		newdownloadbuffer = ""
+		lastmod2 = ""
 		while True:
 			newdata = new_socket.recv(32768)
 			if len(newdata) == 0:
@@ -124,24 +164,44 @@ def downloaddata(filename, website):
 			spl = i.split(" ")
 			if spl[0] == "Content-Length:":
 				content_len = spl[1]
+			if spl[0] == "Last-Modified:":
+				lastmod2 = spl[1]
 
 		#Check if file exists, if exist then terminate program
 		if os.path.exists(filename):
 			#see if file size is the same as the content length
 			fileinfo = os.stat(filename)
 			if content_len == fileinfo.st_size:
-				sys.exit()
+				templastmod2
+				for i in header:
+					spl = i.split(" ")
+					if spl[0] == "Last-Modified:":
+						templastmod2 = spl[1]
+				if templastmod2 == lastmod2:
+					new_socket.close()
+					sys.exit("Your file is already downloaded. Downloader will quit itself")
+				else:
+					a2 = []
+					a2 = newdownloadbuffer.split(NL + NL)
+					with open(filename, 'wb') as myfile:
+						myfile.write(a2[1])
+					new_socket.close()
+					sys.exit("Your file has been updated")
 			else:
 				a2 = []
 				a2 = newdownloadbuffer.split(NL + NL)
 				with open(filename, 'wb') as myfile:
 					myfile.write(a2[1])
+				new_socket.close()
+				sys.exit("Your file has been updated")
 		else:
 			#write to a location in memory
 			a = []
 			a = newdownloadbuffer.split(NL+NL)
 			with open(filename,'wb') as myfile:
 				myfile.write(a[1])
+			new_socket.close()
+			sys.exit("Your file has been downloaded")
 
 		#Check header data of the server	
 		newlistoffiledata = a[0].split(NL)
@@ -152,16 +212,16 @@ def downloaddata(filename, website):
 #website = "http://10.27.8.20:8080"
 #website = "http://ipv4.download.thinkbroadband.com/100MB.zip"
 #website = "http://www.abc.com"
-#website = "http://10.27.8.20:8080/primes11.txt"
+#website = "http://10.27.8.20:8080/bigfile.xyz"
 
 #downloaddata("heheh.jpg",website, False) #ONLY IF WE HAVE HEADER AND GETTER
 
-filename = sys.argv[2]
+ filename = sys.argv[2]
 # #connectionnum = sys.argv[3]
-website = sys.argv[-1]
+ website = sys.argv[-1]
 downloaddata(filename, website)
 
-#downloaddata("file.txt", website)
+#downloaddata("file.xyz", website)
 
 #close connection when you reach content length
 #close connection even if you dont know the content length
