@@ -1,4 +1,5 @@
 # srget
+CP2 update.
 Project 1 for data communications class
 
 Hello and welcome to README.md
