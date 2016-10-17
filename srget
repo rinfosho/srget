@@ -5,6 +5,8 @@ import sys
 import socket
 from urlparse import urlparse
 import os
+import time
+from sys import stdout
 
 #if you want GET, make header_getter true else make it false.
 #first send header, get the contentlenght in the downloadbuffer then send getter
@@ -20,8 +22,6 @@ def downloaddata(filename, website):
 		print "HTTPS is not supported."
 		sys.exit()
 
-	print "end of url parsing"
-
 	#if you want GET, make header_getter true else make it false.
 
 	# if header_getter:
@@ -36,7 +36,6 @@ def downloaddata(filename, website):
 	dwnld_socket.connect((host,port))
 	dwnld_socket.send(http_request)
 
-	print "done opening sockets"
 	#start the download process
 	downloadbuffer = ""
 	while True:
@@ -87,12 +86,34 @@ def findcontentandlastmod(filename, website):
 	
 	return content_len, lastmod
 
+def writetempfile(filename, data, bytesrec):
+	#write to a location in memory
+	with open(filename + ".cr" + ".txt",'wb') as tempfile:
+		b = []
+		b = data.split(NL + NL)
+		head = b[0].split(NL)[1:]
+		for x in range(101):
+			stdout.write("Writing to file: " + '{}\r'.format(str(x) + '%'))
+			stdout.flush()
+			time.sleep(0.1)
+		for dat in head:
+			newdat = dat.split(":")
+			if newdat[0] == "Content-Length" or newdat[0] == "ETag" or newdat[0] == "Last-Modified":
+				print dat
+				tempfile.write(dat+ NL)
+		tempfile.write("Bytes-Received: " + str(len(bytesrec)))
+
+def getrange(path, host, bytes):
+	#bytes = bytes recieved from original file (len)
+	return ("GET {a} HTTP/1.1" + NL + "Host: {b}" + NL + "Connection: close" + NL + "Range: bytes={c}-" + NL + NL).format(a=path, b=host, c=bytes)
+
 def resume(filename, website):
 	content_len = ""
 	etag = ""
 	lastmodif = ""
 	#Check if file exists, if exist then terminate program
 	if os.path.exists(filename):
+		print "does it enter?"
 		#see if file size is the same as the content length
 		fileinfo = os.stat(filename)
 		#info about the headers kept in here
@@ -100,10 +121,10 @@ def resume(filename, website):
 		tempfilename = filename+".cr"+".txt"
 		with open(tempfilename,'r') as tempfile:
 			for line in tempfile:
-				print "lineeee", line
 				contentetag.append(line)
 		res_file = open(filename, 'wb')
 		#put content len, etag and last modi in variables
+		print "does it find content length, etag and last mod"
 		for ele in contentetag:
 			splele = ele.split(":")
 			if splele[0] == "Content-Length":
@@ -125,43 +146,32 @@ def resume(filename, website):
 		newhttp_request = getrange(path, host, fileinfo)
 		dwnld_socket.send(newhttp_request)
 
+		print "after it makes new connection"
+
 		#start the download process
 		new_head = ""
 		downloadbuffer = ""
 		while NL+NL not in new_head:
+			print "does it enter when NLNL not in new_head"
 			data = dwnld_socket.recv(1)
 			new_head = new_head + data
 		while True:
+			"does it download data"
 			data = dwnld_socket.recv(32768)
 			if len(data) == 0:
 				break
-			downloadbuffer = downloadbuffer + data
+			downloadbuffer = data
 			res_file.write(downloadbuffer)
 		dwnld_socket.close()
 		res_file.close()
+		print "does it close file?"
 
-		writetempfile(filename, website, len(downloadbuffer))
+		writetempfile(filename, website, str(len(downloadbuffer)))
+		print "does it write new temp file"
 
-	# 	#extract the content len and last mod
-	# 	extract = findcontentandlastmod(filename,website)
-	# 	content_len, lastmod = extract[0], extract[1]
-	# 	if content_len <= fileinfo.st_size:
-	# 		#Loop through and see last modified
-	# 		templastmod = ""
-	# 		for i in header:
-	# 			spl = i.split(" ")
-	# 			if spl[0] == "Last-Modified":
-	# 				templastmod = spl[1]
-	# 		#if temp last modified and last modified are the same, exit program
-	# 		if templastmod == lastmod and content_len<=fileinfo.st_size:
-	# 			sys.exit("You already have the file, the downloader is going to quit now.")
-	# 		else: 
-	# 			writetofile(filename,b[1])
-	# 			sys.exit("Your file has been updated")
-	# 	#if the file does not have the same content length, then update file		
-	# 	else:
-	# 		writetofile(filename,b[1])
-	# #If there is no file at all, thenn make a new file
+		#extract the content len and last mod
+		extract = findcontentandlastmod(filename,website)
+		content_len, lastmod = extract[0], extract[1]
 
 
 
@@ -171,24 +181,6 @@ def resume(filename, website):
 		#create a temp file for contentlen, bytes recieeved, last modified e-tag
 		bytes_received = os.stat(filename)
 		writetempfile(filename,data, bytes_received)
-
-def writetempfile(filename, data, bytesrec):
-	#write to a location in memory
-	with open(filename + ".cr" + ".txt",'wb') as tempfile:
-		b = []
-		b = data.split(NL + NL)
-		head = b[0].split(NL)[1:]
-		for dat in head:
-			newdat = dat.split(":")
-			if newdat[0] == "Content-Length" or newdat[0] == "ETag" or newdat[0] == "Last-Modified":
-				print dat
-				tempfile.write(dat+ NL)
-		tempfile.write("Bytes-Received: " + str(bytesrec.st_size))
-
-def getrange(path, host, bytes):
-	#bytes = bytes recieved from original file (len)
-	return ("GET {a} HTTP/1.1" + NL + "Host: {b}" + NL + "Connection: close" + NL + "Range: bytes={c}-" + NL + NL).format(a=path, b=host, c=bytes)
-
 
 #website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
 #website = "http://10.27.8.20:8080"
