@@ -1,12 +1,18 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-#Checkpoint 2
+#http://pastebin.com/V0fgzwTj
+#Checkpoint 3
 import sys
 import socket
 from urlparse import urlparse
 import os
 import time
 from sys import stdout
+import asyncore, socket
+import logging 
+from cStringIO import StringIO
+
+#StringIO
 
 #if you want GET, make header_getter true else make it false.
 #first send header, get the contentlenght in the downloadbuffer then send getter
@@ -19,8 +25,7 @@ def downloaddata(filename, website):
 	mypath, port, host, scheme = parsed[0], parsed[1], parsed[2], parsed[3]
 
 	if scheme == "https":
-		print "HTTPS is not supported."
-		sys.exit()
+		sys.exit("HTTPS is not supported.")
 
 	#if you want GET, make header_getter true else make it false.
 
@@ -45,7 +50,52 @@ def downloaddata(filename, website):
 		downloadbuffer = downloadbuffer + data
 	dwnld_socket.close()
 
-	return downloadbuffer
+	header = downloadbuffer.split(NL)
+	httpheader = header[0].split(" ")
+
+	#REDICECT!!
+	if httpheader == '301' or '302':
+		data = downloadbuffer.split(NL)
+		urldata = parsing(data[3])
+		newhost, newport, newpath, newscheme = urldata[0], urldata[1], urldata[2], urldata[3]
+		newhost = newhost.strip(" ")
+		usethishost = urlparse(newhost)
+		if newpath == None:
+			newpath = "/"
+
+		newhttp = "GET " + newpath + " HTTP/1.1" + NL + "Host: " + usethishost.hostname + NL + NL
+
+		#open new socket
+		new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		new_socket.connect((usethishost.hostname,newport))
+		new_socket.send(newhttp)
+
+		newdownloadbuffer = ""
+		while True:
+			newdata = new_socket.recv(32768)
+			if len(newdata) == 0:
+				break
+			newdownloadbuffer = newdownloadbuffer + newdata
+
+		return newdownloadbuffer
+
+	else:
+		return downloadbuffer
+
+def findcontentandlastmod(filename, website):
+	content_len = 0
+	lastmod = ""
+
+	b = []
+	b = downloaddata(filename,website).split(NL+NL)
+	for i in b:
+		spl = i.split(" ")
+		if spl[0] == "Content-Length:":
+			content_len = spl[1]
+		if spl[0] == "Last-Modified:":
+			lastmod = spl[1]
+	
+	return content_len, lastmod
 
 def writetofile(filename, data):
 	b = []
@@ -71,37 +121,18 @@ def parsing(website):
 	scheme = url.scheme
 	return mypath, port, host, scheme
 
-def findcontentandlastmod(filename, website):
-	content_len = 0
-	lastmod = ""
-
-	b = []
-	b = downloaddata(filename,website).split(NL+NL)
-	for i in b:
-		spl = i.split(" ")
-		if spl[0] == "Content-Length:":
-			content_len = spl[1]
-		if spl[0] == "Last-Modified:":
-			lastmod = spl[1]
-	
-	return content_len, lastmod
-
 def writetempfile(filename, data, bytesrec):
 	#write to a location in memory
 	with open(filename + ".cr" + ".txt",'wb') as tempfile:
 		b = []
 		b = data.split(NL + NL)
 		head = b[0].split(NL)[1:]
-		for x in range(101):
-			stdout.write("Writing to file: " + '{}\r'.format(str(x) + '%'))
-			stdout.flush()
-			time.sleep(0.1)
 		for dat in head:
 			newdat = dat.split(":")
 			if newdat[0] == "Content-Length" or newdat[0] == "ETag" or newdat[0] == "Last-Modified":
-				print dat
 				tempfile.write(dat+ NL)
 		tempfile.write("Bytes-Received: " + str(len(bytesrec)))
+	sys.exit("File has been downloaded.")
 
 def getrange(path, host, bytes):
 	#bytes = bytes recieved from original file (len)
@@ -113,7 +144,6 @@ def resume(filename, website):
 	lastmodif = ""
 	#Check if file exists, if exist then terminate program
 	if os.path.exists(filename):
-		print "does it enter?"
 		#see if file size is the same as the content length
 		fileinfo = os.stat(filename)
 		#info about the headers kept in here
@@ -124,7 +154,6 @@ def resume(filename, website):
 				contentetag.append(line)
 		res_file = open(filename, 'wb')
 		#put content len, etag and last modi in variables
-		print "does it find content length, etag and last mod"
 		for ele in contentetag:
 			splele = ele.split(":")
 			if splele[0] == "Content-Length":
@@ -146,17 +175,13 @@ def resume(filename, website):
 		newhttp_request = getrange(path, host, fileinfo)
 		dwnld_socket.send(newhttp_request)
 
-		print "after it makes new connection"
-
 		#start the download process
 		new_head = ""
 		downloadbuffer = ""
 		while NL+NL not in new_head:
-			print "does it enter when NLNL not in new_head"
 			data = dwnld_socket.recv(1)
 			new_head = new_head + data
 		while True:
-			"does it download data"
 			data = dwnld_socket.recv(32768)
 			if len(data) == 0:
 				break
@@ -164,17 +189,14 @@ def resume(filename, website):
 			res_file.write(downloadbuffer)
 		dwnld_socket.close()
 		res_file.close()
-		print "does it close file?"
 
 		writetempfile(filename, website, str(len(downloadbuffer)))
-		print "does it write new temp file"
+		#system will exit after this function is done because i put sys.exit in writetempfile
 
 		#extract the content len and last mod
 		extract = findcontentandlastmod(filename,website)
 		content_len, lastmod = extract[0], extract[1]
-
-
-
+		
 	else:
 		data = downloaddata(filename, website)
 		writetofile(filename, data)
@@ -182,21 +204,77 @@ def resume(filename, website):
 		bytes_received = os.stat(filename)
 		writetempfile(filename,data, bytes_received)
 
-#website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
-#website = "http://10.27.8.20:8080"
-#website = "http://ipv4.download.thinkbroadband.com/100MB.zip"
-#website = "http://www.abc.com"
-#website = "http://10.27.8.20:8080/bigfile.xyz"
-#website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/ShowCase_MUIC_en_033-resized.jpg"
+#--------------------------------------------------------------------------------------------------------------------------------------------------#
 
-#downloaddata("heheh.jpg",website, False) #ONLY IF WE HAVE HEADER AND GETTER
+class HTTPClient(asyncore.dispatcher):
+	## SIze of the buffer for each recv
+	RECV_CHUNK_SIZE = 8192
 
-filename = sys.argv[2]
-# #connectionnum = sys.argv[3]
-website = sys.argv[-1]
-resume(filename, website)
+	def __init__(self,url):
+		asyncore.dispatcher.__init__(self)
+		host, path, port = parse_url(url)
 
-#resume("raja.jpg", website)
+		#Create a logger
+		self.logger = logging.getLogger(url)
 
-#close connection when you reach content length
-#close connection even if you dont know the content length
+		#Create a TCP socket to host at the right port
+		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.connect((host,port))
+
+		self.host = host
+
+		#Create recv buffer and send buffer
+		(self.recvbuf, self.sendbuf) = (StringIO(), "")
+
+		#Make initial request and deliver it.
+		request = make_request('GET', path, {'Host': host})
+
+		self.write(request)
+
+	def write(self, data):
+		"""Schedule to liver data over the socket"""
+		self.sendbuf += data
+
+	def handle_connect(self):
+		self.logger.debug("Connected")
+
+	#leave
+	def handle_close(self):
+		self.logger.debug("Disconnected")
+		self.close()
+
+	#leave
+	def writeable(self):
+		""" Check if there is anything to send"""
+		return len(self.sendbuf) > 0
+
+	#leave
+	def handle_write(self):
+		##If sendbuf is really really big, its not a good idea.
+		bytes_sent = self.send(self.sendbuf)
+		#Trimming
+		self.sendbuf = self.sendbuf[bytes_sent:]
+
+	#put old code in here
+	def handle_read(self):
+		recv_bytes = self.recv(HTTPClient.RECV_CHUNK_SIZE)
+		self.logger.debug("recvd {} bytes".format(len(recv_bytes)))
+		self.recvbuf.write(recv_bytes)
+
+	#make download data function here
+
+if __name__ == "__main__":
+	# logging.basicConfig(level = logging.DEBUG, format = "%(asctime)-15s %(name)s: %(message)s")
+	# clients = [HTTPClient("http://pantip.com/"), HTTPClient("http://www.muic.mahidol.ac.th/eng/"), HTTPClient("http://www.nytimes.com/"), HTTPClient("http://www.cnn.com/")]
+	# asyncore.loop()
+	if len(sys.argv) != 4:
+		website = sys.argv[-1]
+	 	connection_num = sys.argv[3]
+	 	filename = sys.argv[2]
+	 	#now ccall download with connection stuff
+	else:
+		website = sys.argv[-1]
+		filename = sys.argv[2]
+# 		filename = "abc.txt"
+# 		website = "http://www.abc.com"
+		resume(filename, website)
