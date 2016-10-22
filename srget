@@ -1,18 +1,10 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-#http://pastebin.com/V0fgzwTj
-#Checkpoint 3
+#Checkpoint 2
 import sys
 import socket as skt
 from urlparse import urlparse
 import os
-import time
-from sys import stdout
-import asyncore, socket
-import logging 
-from cStringIO import StringIO
-
-#StringIO
 
 #if you want GET, make header_getter true else make it false.
 #first send header, get the contentlenght in the downloadbuffer then send getter
@@ -20,48 +12,31 @@ from cStringIO import StringIO
 #def downloaddata(filename, website, header_getter): if there is HEADER and GETTER
 NL = '\r\n'
 def downloaddata(filename, website):
-
-	#Open socket here (only one socket)
-	#find contentLength of the file you want to download
-	#splitDownloadRange(contentLength)
-	#Create threadpool (number of threads depends on size.splitDownloadRange(contentLength)) here using 
-	#	either asyncio or threading library (whichever is allowed)
-	
-	#For aThread in threadPool:
-	#	threadedDownload(fromWheretoWhere,filename,website)
-	#Note: fromWheretoWhere is drawn from the list given by splitDownloadRange(contentLength)
-	#Note: filename should be a file already created beforehand
-	#Everything in this function from here on should be moved to the threadedDownload function at the end of this file
-	
 	#get elements from parsing
 	parsed = parsing(website)
 	mypath, port, host, scheme = parsed[0], parsed[1], parsed[2], parsed[3]
 
 	if scheme == "https":
-		sys.exit("HTTPS is not supported.")
+		print "HTTPS is not supported."
+		sys.exit()
 
-	#if you want GET, make header_getter true else make it false.
 
-	# if header_getter:
-	# 	variab = "GET "
-	# else:
-	# 	variab = "HEAD "
 
-	#Change this request into something that allows you to download from a specific point
 	http_request = "GET " + mypath + " HTTP/1.1" + NL + "Host: " + host + NL + NL
 	#open socket
 	#location = '/Users/Rin/Downloads/'
-	print "httpreq", http_request
-	dwnld_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	dwnld_socket = skt.socket(skt.AF_INET, skt.SOCK_STREAM)
 	dwnld_socket.settimeout(2)
 	dwnld_socket.connect((host,port))
 	dwnld_socket.send(http_request)
 
-	print "done sockets"
+	print "Your file is downloading.."
 
 	#start the download process
 	downloadbuffer = ""
-	while True:
+	counter = 0
+	while True and counter <4:
+		counter = counter + 1
 		try:
 			data = dwnld_socket.recv(32768)
 		except skt.timeout:
@@ -71,8 +46,6 @@ def downloaddata(filename, website):
 
 	header = downloadbuffer.split(NL)
 	httpheader = header[0].split(" ")
-
-	print "before redirect"
 
 	#REDICECT!!
 	if 300<= int(httpheader[1])<=307:
@@ -109,20 +82,6 @@ def downloaddata(filename, website):
 	else:
 		return downloadbuffer
 
-def findcontentandlastmod(filename, website):
-	content_len = 0
-	lastmod = ""
-
-	header = downloaddata(filename,website).split(NL)
-	for i in header:
-		spl = i.split(" ")
-		if spl[0] == "Content-Length:":
-			content_len = spl[1:]
-		if spl[0] == "Last-Modified:":
-			lastmod = " ".join(spl[1:])
-	
-	return content_len, lastmod
-
 def writetofile(filename, data):
 	b = []
 	b = data.split(NL+NL)
@@ -147,6 +106,10 @@ def parsing(website):
 	scheme = url.scheme
 	return mypath, port, host, scheme
 
+def getrange(path, host, bytes):
+	#bytes = bytes recieved from original file (len)
+	return ("GET {a} HTTP/1.1" + NL + "Host: {b}" + NL + "Connection: close" + NL + "Range: bytes={c}-" + NL + NL).format(a=path, b=host, c=bytes)
+
 def writetempfile(filename, data, bytesrec):
 	#write to a location in memory
 	with open(filename + ".cr" + ".txt",'wb') as tempfile:
@@ -156,13 +119,24 @@ def writetempfile(filename, data, bytesrec):
 		for dat in head:
 			newdat = dat.split(":")
 			if newdat[0] == "Content-Length" or newdat[0] == "ETag" or newdat[0] == "Last-Modified":
+				print dat
 				tempfile.write(dat+ NL)
-		tempfile.write("Bytes-Received: " + str(len(bytesrec)))
-	sys.exit("File has been downloaded.")
+		tempfile.write("Bytes-Received: " + str(len(str(bytesrec))))
 
-def getrange(path, host, bytes):
-	#bytes = bytes recieved from original file (len)
-	return ("GET {a} HTTP/1.1" + NL + "Host: {b}" + NL + "Connection: close" + NL + "Range: bytes={c}-" + NL + NL).format(a=path, b=host, c=bytes)
+def findcontentandlastmod(filename, website):
+	content_len = 0
+	lastmod = ""
+
+	b = []
+	b = downloaddata(filename,website).split(NL+NL)
+	for i in b:
+		spl = i.split(" ")
+		if spl[0] == "Content-Length:":
+			content_len = spl[1]
+		if spl[0] == "Last-Modified:":
+			lastmod = spl[1]
+	
+	return content_len, lastmod
 
 def resume(filename, website):
 	content_len = ""
@@ -178,7 +152,7 @@ def resume(filename, website):
 		with open(tempfilename,'r') as tempfile:
 			for line in tempfile:
 				contentetag.append(line)
-		res_file = open(filename, 'wb')
+		res_file = open(filename, 'a')
 		#put content len, etag and last modi in variables
 		for ele in contentetag:
 			splele = ele.split(":")
@@ -196,11 +170,14 @@ def resume(filename, website):
 		host = a[2]
 
 		#mamke new connection		
-		dwnld_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		dwnld_socket.settimeout(2)
+		dwnld_socket = skt.socket(skt.AF_INET, skt.SOCK_STREAM)
 		dwnld_socket.connect((host,port))
-		newhttp_request = getrange(path, host, fileinfo)
+		dwnld_socket.settimeout(2)
+		newhttp_request = getrange(path, host, fileinfo.st_size)
+		print newhttp_request
 		dwnld_socket.send(newhttp_request)
+		print "sockets opened"
+		con,idc=findcontentandlastmod(filename,website)
 
 		#start the download process
 		new_head = ""
@@ -209,22 +186,17 @@ def resume(filename, website):
 			data = dwnld_socket.recv(1)
 			new_head = new_head + data
 		while True:
-			try:
-				data = dwnld_socket.recv(32768)
-			except skt.timeout:
+			data = dwnld_socket.recv(32768)
+			if len(data) == 0:
 				break
 			downloadbuffer = data
 			res_file.write(downloadbuffer)
 		dwnld_socket.close()
 		res_file.close()
+		print "checking and downloading remaining."
 
-		writetempfile(filename, website, str(len(downloadbuffer)))
-		#system will exit after this function is done because i put sys.exit in writetempfile
+		writetempfile(filename, website, len(downloadbuffer))
 
-		#extract the content len and last mod
-		extract = findcontentandlastmod(filename,website)
-		content_len, lastmod = extract[0], extract[1]
-		
 	else:
 		data = downloaddata(filename, website)
 		writetofile(filename, data)
@@ -233,21 +205,25 @@ def resume(filename, website):
 		writetempfile(filename,data, bytes_received)
 
 
+
+
+
 #website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
-#website = "http://10.27.8.20:8080"
+#website = "http://10.27.8.20:8080/primes11.txt"
 #website = "http://ipv4.download.thinkbroadband.com/100MB.zip"
 #website = "http://www.abc.com"
 #website = "http://10.27.8.20:8080/bigfile.xyz"
-#website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/ShowCase_MUIC_en_033-resized.jpg"
-#website = "http://www.muic.mahidol.ac.th/eng/wp-content/downloads/admission/example_of_mathematics.pdf"
-#website = "http://pantip.com"
-#website = "http://10.27.8.20:8080/primes1.txt"
-#filename = "fmlhfhfy.txt"
+#website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/King.jpg"
+
+#downloaddata("heheh.jpg",website, False) #ONLY IF WE HAVE HEADER AND GETTER
 
 filename = sys.argv[2]
+# #connectionnum = sys.argv[3]
 website = sys.argv[-1]
-resume(filename,website)
+#filename = "hihi.txt"
+resume(filename, website)
 
+#resume("raja.jpg", website)
 
 #close connection when you reach content length
 #close connection even if you dont know the content length
