@@ -34,10 +34,13 @@ def downloaddata(filename, website):
 
 	#start the download process
 	downloadbuffer = ""
+	counter = 0
 	while True:
 		try:
 			data = dwnld_socket.recv(32768)
 		except skt.timeout:
+			break
+		if len(data)==0:
 			break
 		downloadbuffer = downloadbuffer + data
 	dwnld_socket.close()
@@ -52,19 +55,15 @@ def downloaddata(filename, website):
 		newhost, newport, newpath, newscheme = urldata[0], urldata[1], urldata[2], urldata[3]
 		newhost = newhost.strip(" ")
 		usethishost = urlparse(newhost)
-		hosttouse = usethishost.hostname
 		if newpath == None:
 			newpath = "/"
-		if usethishost.hostname == None:
-			hosttouse = urlparse(website).hostname
 
-
-		newhttp = "GET " + newpath + " HTTP/1.1" + NL + "Host: " + hosttouse + NL + NL
+		newhttp = "GET " + newpath + " HTTP/1.1" + NL + "Host: " + usethishost.hostname + NL + NL
 
 		#open new socket
-		new_socket = skt.socket(skt.AF_INET, skt.SOCK_STREAM)
+		new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		new_socket.settimeout(2)
-		new_socket.connect((hosttouse,newport))
+		new_socket.connect((usethishost.hostname,newport))
 		new_socket.send(newhttp)
 
 		newdownloadbuffer = ""
@@ -72,6 +71,8 @@ def downloaddata(filename, website):
 			try:
 				newdata = new_socket.recv(32768)
 			except skt.timeout:
+				break
+			if len(data) == 0:
 				break
 			newdownloadbuffer = newdownloadbuffer + newdata
 
@@ -205,10 +206,6 @@ def resume(filename, website):
 		#create a temp file for contentlen, bytes recieeved, last modified e-tag
 		bytes_received = os.stat(filename)
 		writetempfile(filename,data, bytes_received)
-
-
-
-
 
 #website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
 #website = "http://10.27.8.20:8080/primes11.txt"
