@@ -34,9 +34,7 @@ def downloaddata(filename, website):
 
 	#start the download process
 	downloadbuffer = ""
-	counter = 0
-	while True and counter <4:
-		counter = counter + 1
+	while True:
 		try:
 			data = dwnld_socket.recv(32768)
 		except skt.timeout:
@@ -54,15 +52,19 @@ def downloaddata(filename, website):
 		newhost, newport, newpath, newscheme = urldata[0], urldata[1], urldata[2], urldata[3]
 		newhost = newhost.strip(" ")
 		usethishost = urlparse(newhost)
+		hosttouse = usethishost.hostname
 		if newpath == None:
 			newpath = "/"
+		if usethishost.hostname == None:
+			hosttouse = urlparse(website).hostname
 
-		newhttp = "GET " + newpath + " HTTP/1.1" + NL + "Host: " + usethishost.hostname + NL + NL
+
+		newhttp = "GET " + newpath + " HTTP/1.1" + NL + "Host: " + hosttouse + NL + NL
 
 		#open new socket
-		new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		new_socket = skt.socket(skt.AF_INET, skt.SOCK_STREAM)
 		new_socket.settimeout(2)
-		new_socket.connect((usethishost.hostname,newport))
+		new_socket.connect((hosttouse,newport))
 		new_socket.send(newhttp)
 
 		newdownloadbuffer = ""
@@ -214,6 +216,7 @@ def resume(filename, website):
 #website = "http://www.abc.com"
 #website = "http://10.27.8.20:8080/bigfile.xyz"
 #website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/King.jpg"
+#website = "http://10.27.8.20:8080/redir11"
 
 #downloaddata("heheh.jpg",website, False) #ONLY IF WE HAVE HEADER AND GETTER
 
