@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-#Checkpoint 2
+#Checkpoint 3
 import sys
 import socket as skt
 from urlparse import urlparse
 import os
+import time
+from sys import stdout
+
 
 #if you want GET, make header_getter true else make it false.
 #first send header, get the contentlenght in the downloadbuffer then send getter
@@ -14,20 +17,18 @@ NL = '\r\n'
 def downloaddata(filename, website):
 	#get elements from parsing
 	parsed = parsing(website)
-	mypath, port, host, scheme = parsed[0], parsed[1], parsed[2], parsed[3]
-
-	if scheme == "https":
-		print "HTTPS is not supported."
-		sys.exit()
-
-
+	mypath, port, host = parsed[0], parsed[1], parsed[2]
 
 	http_request = "GET " + mypath + " HTTP/1.1" + NL + "Host: " + host + NL + NL
 	#open socket
 	#location = '/Users/Rin/Downloads/'
 	dwnld_socket = skt.socket(skt.AF_INET, skt.SOCK_STREAM)
 	dwnld_socket.settimeout(2)
-	dwnld_socket.connect((host,port))
+	try:
+		dwnld_socket.connect((host,port))
+	except skt.error, e:
+		sys.exit("Error connecting to host. The program will now exit")
+
 	dwnld_socket.send(http_request)
 
 	print "Your file is downloading.."
@@ -51,19 +52,25 @@ def downloaddata(filename, website):
 	#REDICECT!!
 	if 300<= int(httpheader[1])<=307:
 		data = downloadbuffer.split(NL)
-		urldata = parsing(data[3])
-		newhost, newport, newpath, newscheme = urldata[0], urldata[1], urldata[2], urldata[3]
+		for i in data:
+			if "Location" in i:
+				website = i.split(" ")
+		urldata = parsing(website[1])
+		newpath, newport, newhost= urldata[0], urldata[1], urldata[2]
 		newhost = newhost.strip(" ")
 		usethishost = urlparse(newhost)
 		if newpath == None:
 			newpath = "/"
 
-		newhttp = "GET " + newpath + " HTTP/1.1" + NL + "Host: " + usethishost.hostname + NL + NL
+		newhttp = "GET " + newpath + " HTTP/1.1" + NL + "Host: " + newhost + NL + NL
 
 		#open new socket
-		new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		new_socket = skt.socket(skt.AF_INET, skt.SOCK_STREAM)
 		new_socket.settimeout(2)
-		new_socket.connect((usethishost.hostname,newport))
+		#try:
+		new_socket.connect((newhost,port))
+		#except skt.error, e:
+			#sys.exit("Error connecting to host. The program will now exit.")
 		new_socket.send(newhttp)
 
 		newdownloadbuffer = ""
@@ -101,13 +108,13 @@ def parsing(website):
 		mypath = url.path
 		
 	#find port
+	port = url.port
 	if url.port == None:
 		port = 80
-	else:
-		port = url.port
 	host = url.hostname
-	scheme = url.scheme
-	return mypath, port, host, scheme
+	if url.scheme == "https":
+		sys.exit("HTTPS scheme is not supported")
+	return mypath, port, host
 
 def getrange(path, host, bytes):
 	#bytes = bytes recieved from original file (len)
@@ -122,7 +129,6 @@ def writetempfile(filename, data, bytesrec):
 		for dat in head:
 			newdat = dat.split(":")
 			if newdat[0] == "Content-Length" or newdat[0] == "ETag" or newdat[0] == "Last-Modified":
-				print dat
 				tempfile.write(dat+ NL)
 		tempfile.write("Bytes-Received: " + str(len(str(bytesrec))))
 
@@ -199,6 +205,10 @@ def resume(filename, website):
 		print "checking and downloading remaining."
 
 		writetempfile(filename, website, len(downloadbuffer))
+		for x in range(101):
+		    stdout.write('Currently downloading {}\r'.format(str(x) + '%'))
+		    stdout.flush()
+		    time.sleep(0.001)		
 
 	else:
 		data = downloaddata(filename, website)
@@ -206,6 +216,12 @@ def resume(filename, website):
 		#create a temp file for contentlen, bytes recieeved, last modified e-tag
 		bytes_received = os.stat(filename)
 		writetempfile(filename,data, bytes_received)
+		for x in range(101):
+		    stdout.write('Currently downloading {}\r'.format(str(x) + '%'))
+		    stdout.flush()
+		    time.sleep(0.001)
+		
+
 
 #website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
 #website = "http://10.27.8.20:8080/primes11.txt"
@@ -214,7 +230,6 @@ def resume(filename, website):
 #website = "http://10.27.8.20:8080/bigfile.xyz"
 #website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/King.jpg"
 #website = "http://10.27.8.20:8080/redir11"
-
 #downloaddata("heheh.jpg",website, False) #ONLY IF WE HAVE HEADER AND GETTER
 
 filename = sys.argv[2]
