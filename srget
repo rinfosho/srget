@@ -14,6 +14,10 @@ from sys import stdout
 #and recieve the file.
 #def downloaddata(filename, website, header_getter): if there is HEADER and GETTER
 NL = '\r\n'
+def progressbar(n):
+	sys.stdout.write('\rCurrently downloading {n}%'.format(n=n))
+	sys.stdout.flush()
+
 def downloaddata(filename, website):
 	#get elements from parsing
 	parsed = parsing(website)
@@ -35,6 +39,18 @@ def downloaddata(filename, website):
 
 	#start the download process
 	downloadbuffer = ""
+	head=""
+	while NL+NL not in head:
+		contln=dwnld_socket.recv(10)
+		head+=contln
+	for i in head.split(NL):
+		if "Content-Length:" in i:
+			a=i.split(" ")
+			length=int(a[1])
+	httpheader = head.split(NL)[0].split(" ")
+
+	# while True:
+	# 	if NL+NL not in 
 	counter = 0
 	while True:
 		try:
@@ -44,10 +60,9 @@ def downloaddata(filename, website):
 		if len(data)==0:
 			break
 		downloadbuffer = downloadbuffer + data
-	dwnld_socket.close()
+		progressbar((len(downloadbuffer)/float(length))*100)
 
-	header = downloadbuffer.split(NL)
-	httpheader = header[0].split(" ")
+	dwnld_socket.close()
 
 	#REDICECT!!
 	if 300<= int(httpheader[1])<=307:
@@ -97,7 +112,7 @@ def writetofile(filename, data):
 	b = data.split(NL+NL)
 	#write to a location in memory
 	with open(filename,'wb') as myfile:
-		myfile.write(b[1])
+		myfile.write(b[0])
 
 def parsing(website):
 	url = urlparse(website)
@@ -205,10 +220,10 @@ def resume(filename, website):
 		print "checking and downloading remaining."
 
 		writetempfile(filename, website, len(downloadbuffer))
-		for x in range(101):
-		    stdout.write('\rCurrently downloading {}\r'.format(str(x) + '%'))
-		    stdout.flush()
-		    time.sleep(0.01)		
+		# for x in range(101):
+		#     stdout.write('Currently downloading {}\r'.format(str(x) + '%'))
+		#     stdout.flush()
+		#     time.sleep(0.001)		
 
 	else:
 		data = downloaddata(filename, website)
@@ -216,11 +231,10 @@ def resume(filename, website):
 		#create a temp file for contentlen, bytes recieeved, last modified e-tag
 		bytes_received = os.stat(filename)
 		writetempfile(filename,data, bytes_received)
-		for x in range(101):
-		    stdout.write('\rCurrently downloading {}\r'.format(str(x) + '%'))
-		    stdout.flush()
-		    time.sleep(0.01)
-		
+		# for x in range(101):
+		#     stdout.write('Currently downloading {}\r'.format(str(x) + '%'))
+		#     stdout.flush()
+		#     time.sleep(0.001)
 
 
 #website = "http://www.muic.mahidol.ac.th/eng/wp-content/uploads/2016/10/TEA-banner-960x330-resized-1.jpg"
