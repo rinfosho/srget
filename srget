@@ -206,9 +206,9 @@ def resume(filename, website):
 
 		writetempfile(filename, website, len(downloadbuffer))
 		for x in range(101):
-		    stdout.write('Currently downloading {}\r'.format(str(x) + '%'))
+		    stdout.write('\rCurrently downloading {}\r'.format(str(x) + '%'))
 		    stdout.flush()
-		    time.sleep(0.001)		
+		    time.sleep(0.01)		
 
 	else:
 		data = downloaddata(filename, website)
@@ -217,9 +217,9 @@ def resume(filename, website):
 		bytes_received = os.stat(filename)
 		writetempfile(filename,data, bytes_received)
 		for x in range(101):
-		    stdout.write('Currently downloading {}\r'.format(str(x) + '%'))
+		    stdout.write('\rCurrently downloading {}\r'.format(str(x) + '%'))
 		    stdout.flush()
-		    time.sleep(0.001)
+		    time.sleep(0.01)
 		
 
 
